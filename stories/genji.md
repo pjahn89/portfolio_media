@@ -7,7 +7,6 @@ hero_image: /assets/img/2k_sample.png
 ---
 
 ![Genji scouting output (hero)](/assets/img/2k_banner.png)
-**Caption:** Final output format: a baseball-card scouting artifact that combines ratings, explainable drivers, and evaluation in one page.
 
 ## TL;DR
 This was a major project in my second startup: build a scouting system for the NBA 2K League that could stand up to real decisions. That is, drafts, lineups, coaching, and game patches.
@@ -148,7 +147,7 @@ The baseball-card format became the meeting point between:
 - and the qualitative evaluation story.
 
 ![Player “baseball card” scouting output](/assets/img/2k_sample.png)
-**Caption:** A decision-ready format: the point wasn’t academic elegance; it was usability.
+**Caption:** Final output format: a baseball-card scouting artifact that combines ratings, explainable drivers, and evaluation in one page.
 
 ---
 
