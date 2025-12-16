@@ -1,6 +1,5 @@
 # Genji NLP (I): Twitch Chat → “PogChamp” Moments (BERT-based highlight detection)
 
-![Twitch chat reacting to gameplay](/assets/img/2k_chat.png)
 
 ## Why we built this
 
@@ -9,6 +8,10 @@ At Genji, we kept running into the same problem that later showed up again in la
 > It’s not that we don’t have enough data — we have *too much* data.
 
 Twitch VODs can be many hours long. Manually watching streams to find the “important” moments (big plays, funny glitches, momentum shifts) doesn’t scale — but downstream analysis usually only needs a small fraction of the timeline.
+
+![Twitch chat reacting to gameplay](/assets/img/2k_chat.png)
+
+**Caption** A sample of livestreamed gameplay on the Twitch platform with the live chat interface on the right
 
 So we asked a practical question:
 
@@ -28,6 +31,11 @@ Instead of trying to “understand video” first, we used chat to answer:
 ## What BERT is (and why it mattered pre-ChatGPT)
 
 **BERT** (“Bidirectional Encoder Representations from Transformers”) is a transformer-based language model designed to produce context-aware embeddings of text.
+
+
+![BERT vs. ChatGPT](/assets/img/bert-split-transformer.jpeg)
+
+**Caption** BERT was the fundamental advance behind modern technology like ChatGPT. BERT models are millions to billions of times more lightweight than modern models, but performed leaps better than previous NLP techniques.  
 
 What made BERT historically significant (especially *before* ChatGPT-style generative models were common):
 - It reads text **bidirectionally**, using both left and right context to infer meaning
