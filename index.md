@@ -4,6 +4,8 @@ title: Home
 permalink: /
 ---
 
+![index (hero)](/assets/img/index_banner.png)
+
 # Long-horizon coherence in AI systems
 
 I build models and interfaces that compress complex, shifting environments—games, markets, platforms, and narrative—into representations that remain useful over time.
