@@ -30,13 +30,23 @@ A model only matters if a human can use it. I build artifacts—dashboards, diag
 
 > These are long-form case studies with receipts: **problem → mechanism → evidence → what changed**.
 
+
+![Genji scouting output (hero)](/assets/img/2k_banner.png)
+
 ### Genji / NBA 2K League — scouting under team confounding and meta drift
 Build a talent evaluation system when the only stable label is winning, but outcomes are entangled with team context and changing rules.  
-[Read the story →](/stories/genji/)
+[Read the story →](/stories/genji.md)
 
 ### Delfi Labs — control under uncertainty with real constraints
 Adaptive decision policies when user behavior, constraints, and regimes change the “right” action over time.  
 [Read the story →](/stories/delfi/)
+
+![Twitch (hero)](/assets/img/twitch_banner.png)
+
+### Clipping the Best Moments — Winnowing high-density high-volume video data from gaming livestreams with text techniques
+In a pre-ChatGPT era, what techniques were possible to analyze hours upon hours of livestreaming content and identify the best moments for deeper analysis?   
+[Read the story →](/stories/genji_twitchchat.md)
+
 
 ### Twitch / Mixer — emergent structure and power laws
 Test whether “community” behaves like a transferable asset; measure where naive power-law intuition fails.  
