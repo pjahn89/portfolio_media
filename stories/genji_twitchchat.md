@@ -8,13 +8,13 @@ At Genji, we kept running into the same problem that later showed up again in la
 
 > It’s not that we don’t have enough data — we have *too much* data.
 
-Twitch VODs can be many hours long. Manually watching streams to find the “important” moments (big plays, funny glitches, momentum shifts) doesn’t scale — but downstream analysis usually only needs a small fraction of the timeline.
+Twitch VODs can be many hours long. Manually watching streams to find the “important” moments (big plays, funny glitches, momentum shifts) doesn’t scale. But downstream analysis usually only needs a small fraction of the timeline. 
 
 ![Twitch chat reacting to gameplay](/assets/img/2k_chat.png)
 
 **Caption** A sample of livestreamed gameplay on the Twitch platform with the live chat interface on the right
 
-So we asked a practical question:
+So being a data scientist I asked a practical question:
 
 **Can we use cheap signals to locate the expensive data?**
 
