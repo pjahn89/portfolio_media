@@ -1,5 +1,6 @@
 # Genji NLP (I): Twitch Chat → “PogChamp” Moments (BERT-based highlight detection)
 
+![Banner](/assets/img/twitch_banner.png)
 
 ## Why we built this
 
