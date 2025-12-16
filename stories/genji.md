@@ -1,106 +1,173 @@
 ---
 layout: story
-title: "Genji / NBA 2K — Distinguishing talent in a long-horizon team system"
+title: "Genji / NBA 2K — Distinguishing talent when the only truth is winning"
 permalink: /stories/genji/
 tags: [Dynamics, Compression, Interface]
+hero_image: /assets/img/2k_sample.png
 ---
+
+![Genji scouting output (hero)](/assets/img/2k_sample.png)
+**Caption:** Final output format: a baseball-card scouting artifact that combines ratings, explainable drivers, and evaluation in one page.
 
 ## TL;DR
-- This is one of the leading projects I developed in the 2nd startup I cofounded
-- In NBA 2K League scouting, “good stats” are abundant—but **talent** is confounded by teammates, roles, and meta shifts.
-- I started from raw in-game telemetry and treated evaluation as a **long-horizon inference** problem: what persists across changing context?
-- Built a win-grounded MMR (Elo/Glicko-family) baseline, then extended it to **team-aware** ratings to model “carry” vs. “drag.”
-- Added an interpretable predictive layer (XGBoost) to identify which normalized in-game factors most moved win probability under the evolving meta.
-- Final output: a **baseball-card style** scouting artifact that combined data, algorithms, and coaching intuition into something decision-makers could actually use.
+This was a major project in my second startup: build a scouting system for the NBA 2K League that could stand up to real decisions. That is, drafts, lineups, coaching, and game patches.
 
-> This project is ultimately a **mathematical storytelling exercise**: start from intuition (“what is talent?”), formalize it into state and update rules, test against outcomes, and present results in a form that creates real decisions and real impact.
+- Started from extremely granular in-game telemetry (the game records almost everything).
+- Built a win-anchored MMR baseline (Elo/Glicko-family) to compress “talent” into a stable state that updates over time.
+- Extended to **team-aware** ratings to address carry/drag effects in a five-player system.
+- Added an XGBoost layer to identify which normalized in-game factors were most predictive of wins under a shifting meta.
+- Packaged results into a baseball-card interface so non-technical stakeholders could actually use it.
+- Draft-day checkpoint: our internally predicted top player was drafted first.
 
----
-
-## 1) The problem: “talent” is not a box score
-In a team game, performance is entangled:
-- team composition and hidden synergy,
-- role/position constraints,
-- shifting strategies (“meta”) as patches and balance updates land,
-- and selection bias (strong players attract strong teammates, etc.).
-
-The game produces a *huge* surface area of data—possessions, touches, shots, assists, archetypes, and more—but the core question stays stubbornly simple:
-
-**How do we distinguish talent when the environment is changing and the unit of success is the team?**
-
-![Raw in-game telemetry table](/assets/img/2k_rawdata.png)  
-**Caption:** Example of the raw scouting substrate: per-session player records with position/archetype plus high-frequency event-derived stats (possessions, touches, shot attempts, points, etc.).
+This is, for me, a form of **mathematical storytelling**: take intuition and argument, turn it into state + update rules, test it against outcomes, and then present it in a form that makes decisions possible.
 
 ---
 
-## 2) First pass: anchor everything to winning (MMR / Elo intuition)
-It’s tempting to hunt for “the right stats,” but scouting needs an objective anchor. In competition, the ultimate label is **victory**.
+## 1) The setting
+In the NBA 2K League, scouting is weird in a very specific way:
 
-So the first baseline was an MMR in the Elo family:
-- Each player has a rating \(R\).
-- Against an opponent rating \(R_{opp}\), expected score is:
+You don’t just have box scores, you have telemetry. The game gives you extremely well-documented reality: possessions, touches, shot locations, role/archetype, efficiency splits, and dozens of other signals.
 
-\[
-E = \frac{1}{1 + 10^{(R_{opp}-R)/400}}
-\]
+![Raw in-game telemetry table](/assets/img/2k_rawdata.png)
+**Caption:** A slice of the raw scouting substrate: role/archetype plus high-frequency stat traces.
 
-- After a game with outcome \(S \in \{0,1\}\), update:
+The density of the raw data leads you into thinking that applying basketball intuition onto the data will be enough. But in a team game, the most important variables are the ones a spreadsheet doesn’t naturally separate:
+- teammate strength and synergy,
+- role constraints,
+- strategy/meta drift as patches change incentives,
+- and selection effects (strong players tend to cluster).
 
-\[
+So the question I kept returning to was:
+
+**How do you distinguish talent when context is doing half the work?**
+
+---
+
+## 2) The anchor: if it doesn’t predict wins, it doesn’t matter
+There are plenty of “expert” views of how basketball should be played. It’s easy to pick a handful of metrics and tell a story about them. But ultimately if you don't win, what's the difference? The only label that doesn’t negotiate is **winning** (with caveats, as we’ll see).
+
+So the first pass was intentionally blunt: build an MMR and let the rating be a compressed summary of win-impact over time.
+
+### Elo intuition (baseline)
+Elo is the simplest story you can tell about competition:
+- rating is a belief about strength,
+- strength predicts expected outcome,
+- outcome updates belief.
+
+Expected win probability:
+
+$$
+E = \frac{1}{1 + 10^{(R_{\text{opp}}-R)/400}}
+$$
+
+Rating update after a game:
+
+$$
 R \leftarrow R + K(S - E)
-\]
+$$
 
-This gives a clean starting story: **ratings are a compressed state** that updates with outcomes.
+Where \(S=1\) for a win and \(S=0\) for a loss.
 
-But this alone doesn’t answer the biggest scouting objection.
+This gave us our first baseline: a single evolving number per player, grounded in outcomes.
 
----
-
-## 3) The missing concept: “carry” and “drag” (team confounding)
-Everyone in esports knows the phenomenon:
-- a top player can **carry** a weaker lineup to wins,
-- or a weak lineup can **drag** a strong player’s record down.
-
-A purely individual rating system tends to leak team confounding into the player rating.
-
-So we moved to a team-aware approach:
-- represent each match as two five-player lineups,
-- compute a composite opponent “strength” signal for the lineup context,
-- and update individual ratings using that context.
+It also immediately exposed the next problem.
 
 ---
 
-## 4) Team-aware MMR: what the code is doing (and what it implies)
-Below is the team-context pipeline you shared, interpreted as a story of **state construction → state update**.
+## 3) The problem everyone knows: carry and drag
+In a five-player system, outcomes are not additive in any simple way.
 
-### `opTeamMMR(...)` — build opponent-team context features
-High-level intent:
-- The games sheet is sorted by game, with **10 rows per match** (5 players per team).
-- For each match:
-  - build the losing team’s player list and the winning team’s player list,
-  - compute a team aggregate (mean) of rating + uncertainty (RD),
-  - write those aggregates into new columns for every player-row so each record “knows” the opponent team context.
+Some players elevate weaker teammates (carry).  
+Some players get pulled down by lineups that can’t execute (drag).  
+Some roles only look good when the surrounding structure exists.
 
-What this accomplishes conceptually:
-- every row gets a **compressed context**: “how strong was the opposing lineup, and how uncertain are we about them?”
+A pure individual MMR leaks team context into the individual rating and calls it “talent.”
 
-> Red-team note (important): in the snippet as written, `loss_player` and `win_player` are initialized *outside* the per-game loop and never cleared, so the aggregates would drift across games unless you reset them each match. Also the second loop uses `if i < 5` instead of `if j < 5`, which would mis-assign aggregates. If this was just a pasted excerpt, we should reflect the correct logic in the portfolio version.
+That wasn’t acceptable if we wanted this to help a draft.
 
-### `updateMMR(...)` — update player ratings from repeated opponent contexts
-High-level intent:
-- The games sheet is sorted by player.
-- For each player:
-  - collect a list of opponent team ratings and RDs from the appended columns,
-  - collect outcomes (W/L),
-  - update the player’s rating using a Glicko-style update (rating + RD).
+So we moved from “player vs player” thinking to **player-in-context** thinking.
 
-What this accomplishes conceptually:
-- instead of a single Elo update against a single opponent rating,
-- you update against a **sequence of lineup contexts**, which is closer to how performance actually accumulates in league play.
+---
 
-```python
-# Conceptual reading, not literal line-by-line:
-# - build opponent-team aggregates per match (rating, uncertainty)
-# - attach those aggregates to each player-row
-# - for each player, update rating from many match contexts
-#   using rating + RD (uncertainty-aware MMR)
+## 4) Team-aware MMR (what my pipeline is doing)
+The key move was to represent each match as two opposing lineups and attach a composite “opponent team strength” context to each player-row, then update the player rating using that context repeatedly across matches.
+
+![Genji mechanism diagram](/assets/img/genji-mechanism.png)
+**Caption:** Conceptual pipeline: telemetry → cleaned features → baseline MMR → team-aware context + XGBoost → a scouting artifact that survives meta drift and supports real decisions.
+
+### Step A — Build opponent-team context features (lineup aggregates)
+Instead of treating a player’s game as “player vs player,” I treated each game as “lineup vs lineup”:
+
+- Each match has 10 player rows (5 per team).
+- For each match, compute a compact summary of the opposing lineup:
+  - opponent team rating (aggregate)
+  - opponent team uncertainty (aggregate RD)
+- Write those two opponent context values back onto every player row from the match.
+
+Outcome: every player-game record now carries the question scouting actually cares about:
+**what kind of team did this performance happen against?**
+
+### Step B — Update each player rating using repeated opponent contexts
+Then, for each player, aggregate across their games:
+
+- collect opponent team rating + opponent RD per game
+- collect W/L outcomes
+- update the player using a rating+uncertainty system (Glicko-family logic), not just single-step Elo
+
+The conceptual point is simple:
+**separate player signal from lineup context as much as you can, and track uncertainty honestly.**
+
+---
+
+## 5) Meta drift: why we added XGBoost
+Then we hit the twist that’s specific to games:
+
+**the rules change.**
+
+Balance patches and meta drift can change what “good” looks like. Stakeholders wanted more than a rating—they wanted visibility into drivers:
+
+- Which normalized in-game factors are most predictive of wins *right now*?
+- Which factors look like outlier advantages?
+- How role/archetype interacts with what “works”?
+
+So I trained an XGBoost model to predict win probability from a mixture of:
+- continuous normalized stats
+- categorical signals (role/archetype/position)
+
+### XGBoost in one paragraph
+XGBoost is an ensemble of decision trees trained sequentially, where each new tree focuses on correcting the residual errors of the current model. It tends to perform well on tabular data, captures nonlinear interactions, and provides practical diagnostics for “what matters” (with the usual caveats about confounding).
+
+---
+
+## 6) The interface: baseball cards (because stakeholders don’t read notebooks)
+We didn’t want the output to be “a model.” We wanted a scouting artifact.
+
+The baseball-card format became the meeting point between:
+- the compressed talent story (MMR + uncertainty),
+- the explainability story (which factors drive wins in the current meta),
+- and the qualitative evaluation story.
+
+![Player “baseball card” scouting output](/assets/img/2k_sample.png)
+**Caption:** A decision-ready format: the point wasn’t academic elegance; it was usability.
+
+---
+
+## 7) Draft day checkpoint
+Our internal ranking matched the most visible external checkpoint: our predicted top player was drafted first.
+
+![Draft coverage](/assets/img/2k_article_NYT.png)
+**Caption:** The moment the internal story met a public decision.
+
+I don’t treat that as “proof the model is correct.” I treat it as evidence that the pipeline produced something coherent enough to be trusted in a real decision loop.
+
+---
+
+## What generalizes
+This project is the same pattern I keep returning to across domains:
+
+- define a minimal state that matters,
+- update it under drift and uncertainty,
+- separate signal from context,
+- and present it in an interface where humans can reason, disagree, and decide.
+
+That combination—math + narrative + artifacts—is what I mean by mathematical storytelling.
