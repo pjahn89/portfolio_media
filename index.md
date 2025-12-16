@@ -50,6 +50,3 @@ Prevent story drift with state tracking (secrets, relationships, constraints) an
 
 ## Research direction (one paragraph)
 I’m pursuing a unified view of narrative and mathematics as tools for compression: both are ways to represent complex systems with enough fidelity to remain predictive and meaningful over long time horizons. My work centers on identifying minimal state, designing update rules under uncertainty, and building interfaces that make coherence legible.
-
----
-**[your LinkedIn]**
