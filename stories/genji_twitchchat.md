@@ -1,6 +1,6 @@
 # Genji NLP (I): Twitch Chat → “PogChamp” Moments (BERT-based highlight detection)
 
-![Twitch chat reacting to gameplay](./assets/2k_chat.png)
+![Twitch chat reacting to gameplay](./assets/img/2k_chat.png)
 
 ## Why we built this
 
@@ -38,7 +38,7 @@ That mattered for Twitch because chat meaning is often implicit (“Pog”, emot
 
 ## Training & implementation
 
-![Training and implementation sequence](./assets/genji_bert_pipeline.png)
+![Training and implementation sequence](./assets/img/genji_bert_pipeline.png)
 
 1. **Domain adaptation (Twitch language)**
    - We collected a large dump of Twitch chats (plus related internet text reflecting Twitch culture).
@@ -57,7 +57,7 @@ That mattered for Twitch because chat meaning is often implicit (“Pog”, emot
 
 ## How the model selects timestamps
 
-![Scoring chat windows to choose clip timestamps](./assets/genji_timestamp_scoring.png)
+![Scoring chat windows to choose clip timestamps](./assets/img/genji_timestamp_scoring.png)
 
 Operationally, we ran the model on sliding windows of chat (e.g., every N seconds), producing an “interesting moment” score:
 - **Score spikes** → candidate moments
