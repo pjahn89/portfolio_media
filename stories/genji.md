@@ -6,6 +6,7 @@ tags: [Dynamics, Compression, Interface]
 ---
 
 ## TL;DR
+- This is one of the leading projects I developed in the 2nd startup I cofounded
 - In NBA 2K League scouting, “good stats” are abundant—but **talent** is confounded by teammates, roles, and meta shifts.
 - I started from raw in-game telemetry and treated evaluation as a **long-horizon inference** problem: what persists across changing context?
 - Built a win-grounded MMR (Elo/Glicko-family) baseline, then extended it to **team-aware** ratings to model “carry” vs. “drag.”
