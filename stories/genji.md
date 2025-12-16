@@ -6,7 +6,7 @@ tags: [Dynamics, Compression, Interface]
 hero_image: /assets/img/2k_sample.png
 ---
 
-![Genji scouting output (hero)](/assets/img/2k_sample.png)
+![Genji scouting output (hero)](/assets/img/2k_banner.png)
 **Caption:** Final output format: a baseball-card scouting artifact that combines ratings, explainable drivers, and evaluation in one page.
 
 ## TL;DR
