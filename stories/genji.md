@@ -92,7 +92,7 @@ So we moved from “player vs player” thinking to **player-in-context** thinki
 ## 4) Team-aware MMR (what my pipeline is doing)
 The key move was to represent each match as two opposing lineups and attach a composite “opponent team strength” context to each player-row, then update the player rating using that context repeatedly across matches.
 
-![Genji mechanism diagram](/assets/img/genji-mechanism.png)
+![Genji mechanism diagram](/assets/img/2k_pipeline.png)
 **Caption:** Conceptual pipeline: telemetry → cleaned features → baseline MMR → team-aware context + XGBoost → a scouting artifact that survives meta drift and supports real decisions.
 
 ### Step A — Build opponent-team context features (lineup aggregates)
