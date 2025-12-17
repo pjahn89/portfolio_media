@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your Name — Portfolio</title>
+  <meta name="description" content="Designer-researcher portfolio: narrative systems, learning dynamics, and tool-building." />
+
+  <!-- Social -->
+  <meta property="og:title" content="Your Name — Portfolio" />
+  <meta property="og:description" content="Designer-researcher portfolio: narrative systems, learning dynamics, and tool-building." />
+  <meta property="og:type" content="website" />
+
+  <!-- Fonts (swap if you want) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="./">
+        <span class="brand__mark"></span>
+        <span class="brand__text">YOUR NAME</span>
+      </a>
+
+      <nav class="nav">
+        <a href="#work">Work</a>
+        <a href="#research">Research</a>
+        <a href="#writing">Writing</a>
+        <a href="#about">About</a>
+        <a class="nav__cta" href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero__inner">
+        <div class="hero__copy">
+          <p class="kicker">MIT Media Lab–style portfolio · systems · narrative · learning</p>
+          <h1 class="hero__title">
+            I build <span class="glow">tools & stories</span><br/>
+            that compress complexity.
+          </h1>
+          <p class="hero__lede">
+            Short, rigorous case studies: what I built, why it matters, how it works, and what I learned.
+          </p>
+
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="#work">View selected work</a>
+            <a class="btn btn--ghost" href="mailto:you@email.com">Email</a>
+            <a class="btn btn--ghost" href="./assets/CV.pdf">CV</a>
+          </div>
+
+          <div class="chips" aria-label="Focus areas">
+            <span class="chip">Narrative as coarse-graining</span>
+            <span class="chip">Game interfaces for data</span>
+            <span class="chip">Learning dynamics</span>
+            <span class="chip">Risk & hedging education</span>
+          </div>
+        </div>
+
+        <div class="hero__panel" role="img" aria-label="Abstract background panel">
+          <div class="panel__grid"></div>
+          <div class="panel__badge">
+            <div class="badge__row">
+              <span class="dot"></span>
+              <span class="badge__label">Now</span>
+            </div>
+            <p class="badge__text">PhD applications · prototypes · case studies</p>
+          </div>
+          <div class="panel__stats">
+            <div class="stat">
+              <div class="stat__num">3–6</div>
+              <div class="stat__label">flagship stories</div>
+            </div>
+            <div class="stat">
+              <div class="stat__num">2</div>
+              <div class="stat__label">live prototypes</div>
+            </div>
+            <div class="stat">
+              <div class="stat__num">1</div>
+              <div class="stat__label">core thesis</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORK -->
+    <section id="work" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Selected work</h2>
+          <p>Each project has a dedicated “substory” page with the same visual language.</p>
+        </div>
+
+        <div class="grid cards">
+          <article class="card reveal">
+            <div class="card__top">
+              <span class="tag">Fintech · Story</span>
+              <span class="meta">Case study</span>
+            </div>
+            <h3>Delfi — Hedging as a public good</h3>
+            <p>
+              A narrative + product framing: risk management as a shield (not a sword), with modern distribution.
+            </p>
+            <div class="card__actions">
+              <a class="link" href="./stories/delfi.html">Read story →</a>
+            </div>
+          </article>
+
+          <article class="card reveal">
+            <div class="card__top">
+              <span class="tag">Games · Research</span>
+              <span class="meta">Prototype</span>
+            </div>
+            <h3>Narrative quest generator</h3>
+            <p>
+              A constrained simulation for testing narrative as efficient coarse-graining in complex systems.
+            </p>
+            <div class="card__actions">
+              <a class="link" href="./stories/quest-generator.html">Read story →</a>
+              <span class="hint">(create this page next)</span>
+            </div>
+          </article>
+
+          <article class="card reveal">
+            <div class="card__top">
+              <span class="tag">LLMs · Systems</span>
+              <span class="meta">Research note</span>
+            </div>
+            <h3>Fractal documents & memory</h3>
+            <p>
+              A working thesis: language/narrative as a multi-scale representation with measurable structure.
+            </p>
+            <div class="card__actions">
+              <a class="link" href="./stories/fractal-memory.html">Read story →</a>
+              <span class="hint">(create this page next)</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESEARCH -->
+    <section id="research" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Research direction</h2>
+          <p>Clear claims, falsifiable tests, and artifacts.</p>
+        </div>
+
+        <div class="grid two">
+          <div class="panel reveal">
+            <h3>Thesis</h3>
+            <p>
+              Narrative can act as an efficient compression / coarse-graining operator for far-from-equilibrium systems.
+              The portfolio tests this with interactive interfaces and measurable prediction tasks.
+            </p>
+          </div>
+
+          <div class="panel reveal">
+            <h3>What I measure</h3>
+            <ul class="list">
+              <li>Compression vs predictive retention</li>
+              <li>Human prediction accuracy vs model prediction accuracy</li>
+              <li>Intervention studies (what narrative edits change outcomes?)</li>
+              <li>Learning dynamics under constrained representations</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WRITING -->
+    <section id="writing" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Writing</h2>
+          <p>Short, readable notes. No fluff.</p>
+        </div>
+
+        <div class="stack">
+          <a class="row reveal" href="./stories/writing-01.html">
+            <div>
+              <div class="row__title">On “hedging” vs “speculation” as product philosophy</div>
+              <div class="row__meta">Draft · 5 min read</div>
+            </div>
+            <span class="row__arrow">→</span>
+          </a>
+
+          <a class="row reveal" href="./stories/writing-02.html">
+            <div>
+              <div class="row__title">Narrative as a renormalization operator (toy models)</div>
+              <div class="row__meta">Draft · 7 min read</div>
+            </div>
+            <span class="row__arrow">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>About</h2>
+          <p>One paragraph you can tune for Media Lab tone.</p>
+        </div>
+
+        <div class="panel reveal">
+          <p>
+            I’m a builder-researcher focused on the interface between mathematical structure and human narrative.
+            I prototype interactive systems (often game-like) to test whether “story” can serve as a measurable,
+            efficient representation for prediction and decision-making.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="section">
+      <div class="wrap">
+        <div class="cta reveal">
+          <h2>Contact</h2>
+          <p>Best way to reach me: email. Links below.</p>
+          <div class="cta__actions">
+            <a class="btn btn--primary" href="mailto:you@email.com">you@email.com</a>
+            <a class="btn btn--ghost" href="https://github.com/YOURUSERNAME">GitHub</a>
+            <a class="btn btn--ghost" href="https://www.linkedin.com/in/YOURUSERNAME/">LinkedIn</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <span>© <span id="y"></span> Your Name</span>
+        <span class="footer__sep">·</span>
+        <a href="#main">Back to top</a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="./script.js"></script>
+</body>
+</html>
