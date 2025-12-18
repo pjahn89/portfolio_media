@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Genji / NBA 2K — Distinguishing talent when the only truth is winning</title>
+  <meta name="description" content="Scouting system for the NBA 2K League: win-anchored MMR + team-aware context + XGBoost, packaged into decision-ready artifacts." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../../styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="../../">
+        <span class="brand__mark"></span>
+        <span class="brand__text">YOUR NAME</span>
+      </a>
+      <nav class="nav">
+        <a href="../../#work">Work</a>
+        <a href="../../#research">Research</a>
+        <a class="nav__cta" href="../../#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero__inner">
+        <div class="hero__copy">
+          <p class="kicker">Dynamics · Compression · Interface</p>
+          <h1 class="hero__title">Genji / NBA 2K — Distinguishing talent when the only truth is winning</h1>
+          <p class="hero__lede">
+            Build a scouting system for the NBA 2K League that could stand up to real decisions: drafts, lineups,
+            coaching, and game patches.
+          </p>
+
+          <div class="chips">
+            <span class="chip">MMR (Elo/Glicko family)</span>
+            <span class="chip">Team-aware context</span>
+            <span class="chip">XGBoost drivers</span>
+            <span class="chip">Decision artifact UI</span>
+          </div>
+
+          <div class="hero__actions" style="margin-top:14px">
+            <a class="btn btn--ghost" href="../../#work">← Back</a>
+            <a class="btn btn--primary" href="#tldr">TL;DR</a>
+          </div>
+        </div>
+
+        <div class="hero__panel">
+          <div class="panel__grid"></div>
+          <div class="panel__badge">
+            <div class="badge__row">
+              <span class="dot"></span>
+              <span class="badge__label">Checkpoint</span>
+            </div>
+            <p class="badge__text">
+              Draft-day checkpoint:<br/>
+              internal top-ranked player drafted first.
+            </p>
+          </div>
+          <div class="panel__stats">
+            <div class="stat">
+              <div class="stat__num">MMR</div>
+              <div class="stat__label">win-anchored baseline</div>
+            </div>
+            <div class="stat">
+              <div class="stat__num">Context</div>
+              <div class="stat__label">team-aware adjustment</div>
+            </div>
+            <div class="stat">
+              <div class="stat__num">UI</div>
+              <div class="stat__label">baseball-card output</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wrap" style="margin-top:18px">
+        <figure class="figure">
+          <img src="../../assets/img/2k_banner.png" alt="Genji scouting output (hero)" />
+          <figcaption>Genji scouting output (hero)</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- TL;DR -->
+    <section id="tldr" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>TL;DR</h2>
+        </div>
+
+        <div class="panel prose">
+          <p>
+            This was a major project in my second startup: build a scouting system for the NBA 2K League that could stand up
+            to real decisions. That is, drafts, lineups, coaching, and game patches.
+          </p>
+
+          <ul class="list">
+            <li>Started from extremely granular in-game telemetry (the game records almost everything).</li>
+            <li>Built a win-anchored MMR baseline (Elo/Glicko-family) to compress “talent” into a stable state that updates over time.</li>
+            <li>Extended to <strong>team-aware</strong> ratings to address carry/drag effects in a five-player system.</li>
+            <li>Added an XGBoost layer to identify which normalized in-game factors were most predictive of wins under a shifting meta.</li>
+            <li>Packaged results into a baseball-card interface so non-technical stakeholders could actually use it.</li>
+            <li>Draft-day checkpoint: our internally predicted top player was drafted first.</li>
+          </ul>
+
+          <p>
+            This is, for me, a form of <strong>mathematical storytelling</strong>: take intuition and argument, turn it into state + update rules,
+            test it against outcomes, and then present it in a form that makes decisions possible.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1) Setting -->
+    <section class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>1) The setting</h2>
+        </div>
+
+        <div class="prose">
+          <p>
+            In the NBA 2K League, scouting is weird in a very specific way: you don’t just have box scores, you have telemetry.
+            The game gives you extremely well-documented reality: possessions, touches, shot locations, role/archetype, efficiency splits,
+            and dozens of other signals.
+          </p>
+
+          <figure class="figure">
+            <img src="../../assets/img/2k_rawdata.png" alt="Raw in-game telemetry table" />
+            <figcaption>A slice of the raw scouting substrate: role/archetype plus high-frequency stat traces.</figcaption>
+          </figure>
+
+          <p>
+            The density of the raw data leads you into thinking that applying basketball intuition onto the data will be enough.
+            But in a team game, the most important variables are the ones a spreadsheet doesn’t naturally separate:
+          </p>
+
+          <ul class="list">
+            <li>teammate strength and synergy,</li>
+            <li>role constraints,</li>
+            <li>strategy/meta drift as patches change incentives,</li>
+            <li>and selection effects (strong players tend to cluster).</li>
+          </ul>
+
+          <p class="callout">
+            <strong>Core question:</strong> How do you distinguish talent when context is doing half the work?
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) Anchor -->
+    <section class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>2) The anchor: if it doesn’t predict wins, it doesn’t matter</h2>
+        </div>
+
+        <div class="prose">
+          <p>
+            There are plenty of “expert” views of how basketball should be played. It’s easy to pick a handful of metrics and tell a story about them.
+            But ultimately if you don’t win, what’s the difference? The only label that doesn’t negotiate is <strong>winning</strong> (with caveats).
+          </p>
+
+          <p>
+            So the first pass was intentionally blunt: build an MMR and let the rating be a compressed summary of win-impact over time.
+          </p>
+
+          <h3>Elo intuition (baseline)</h3>
+          <p>Elo is the simplest story you can tell about competition:</p>
+          <ul class="list">
+            <li>rating is a belief about strength,</li>
+            <li>strength predicts expected outcome,</li>
+            <li>outcome updates belief.</li>
+          </ul>
+
+          <p><strong>Expected win probability:</strong></p>
+          <p class="math">$$E = \\frac{1}{1 + 10^{(R_{\\text{opp}}-R)/400}}$$</p>
+
+          <p><strong>Rating update after a game:</strong></p>
+          <p class="math">$$R \\leftarrow R + K(S - E)$$</p>
+
+          <p>Where \(S=1\) for a win and \(S=0\) for a loss.</p>
+
+          <p>
+            This gave us our first baseline: a single evolving number per player, grounded in outcomes.
+            It also immediately exposed the next problem.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3) Carry / drag -->
+    <section class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>3) The problem everyone knows: carry and drag</h2>
+        </div>
+
+        <div class="prose">
+          <p>In a five-player system, outcomes are not additive in any simple way.</p>
+
+          <p>
+            Some players elevate weaker teammates (carry). Some players get pulled down by lineups that can’t execute (drag).
+            Some roles only look good when the surrounding structure exists.
+          </p>
+
+          <p>
+            A pure individual MMR leaks team context into the individual rating and calls it “talent.”
+            That wasn’t acceptable if we wanted this to help a draft.
+          </p>
+
+          <p>So we moved from “player vs player” thinking to <strong>player-in-context</strong> thinking.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4) Team-aware MMR -->
+    <section class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>4) Team-aware MMR (what my pipeline is doing)</h2>
+        </div>
+
+        <div class="prose">
+          <p>
+            The key move was to represent each match as two opposing lineups and attach a composite “opponent team strength”
+            context to each player-row, then update the player rating using that context repeatedly across matches.
+          </p>
+
+          <figure class="figure">
+            <img src="../../assets/img/2k_pipeline.png" alt="Genji mechanism diagram" />
+            <figcaption>
+              Conceptual pipeline: telemetry → cleaned features → baseline MMR → team-aware context + XGBoost →
+              a scouting artifact that survives meta drift and supports real decisions.
+            </figcaption>
+          </figure>
+
+          <h3>Step A — Build opponent-team context features (lineup aggregates)</h3>
+          <ul class="list">
+            <li>Each match has 10 player rows (5 per team).</li>
+            <li>For each match, compute a compact summary of the opposing lineup:
+              <ul class="list">
+                <li>opponent team rating (aggregate)</li>
+                <li>opponent team uncertainty (aggregate RD)</li>
+              </ul>
+            </li>
+            <li>Write those two opponent context values back onto every player row from the match.</li>
+          </ul>
+
+          <p class="callout">
+            Outcome: every player-game record now carries the question scouting actually cares about:
+            <strong>what kind of team did this performance happen against?</strong>
+          </p>
+
+          <h3>Step B — Update each player rating using repeated opponent contexts</h3>
+          <ul class="list">
+            <li>collect opponent team rating + opponent RD per game</li>
+            <li>collect W/L outcomes</li>
+            <li>update the player using a rating+uncertainty system (Glicko-family logic), not just single-step Elo</li>
+          </ul>
+
+          <p><strong>Conceptual point:</strong> separate player signal from lineup context as much as you can, and track uncertainty honestly.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5) Meta drift -->
+    <section class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>5) Meta drift: why we added XGBoost</h2>
+        </div>
+
+        <div class="prose">
+          <p>Then we hit the twist that’s specific to games: <strong>the rules change.</strong></p>
+
+          <p>Balance patches and meta drift can change what “good” looks like. Stakeholders wanted more than a rating—they wanted visibility into drivers:</p>
+          <ul class="list">
+            <li>Which normalized in-game factors are most predictive of wins <em>right now</em>?</li>
+            <li>Which factors look like outlier advantages?</li>
+            <li>How role/archetype interacts with what “works”?</li>
+          </ul>
+
+          <p>
+            So I trained an XGBoost model to predict win probability from a mixture of continuous normalized stats
+            and categorical signals (role/archetype/position).
+          </p>
+
+          <h3>XGBoost in one paragraph</h3>
+          <p>
+            XGBoost is an ensemble of decision trees trained sequentially, where each new tree focuses on correcting the residual errors of the current model.
+            It tends to perform well on tabular data, captures nonlinear interactions, and provides practical diagnostics for “what matters”
+            (with the usual caveats about confounding).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6) Interface -->
+    <section class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>6) The interface: baseball cards</h2>
+        </div>
+
+        <div class="prose">
+          <p>We didn’t want the output to be “a model.” We wanted a scouting artifact.</p>
+
+          <p>The baseball-card format became the meeting point between:</p>
+          <ul class="list">
+            <li>the compressed talent story (MMR + uncertainty),</li>
+            <li>the explainability story (which factors drive wins in the current meta),</li>
+            <li>and the qualitative evaluation story.</li>
+          </ul>
+
+          <figure class="figure">
+            <img src="../../assets/img/2k_sample.png" alt="Player baseball card scouting output" />
+            <figcaption>
+              Final output format: a baseball-card scouting artifact that combines ratings, explainable drivers, and evaluation in one page.
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7) Draft day -->
+    <section class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>7) Draft day checkpoint</h2>
+        </div>
+
+        <div class="prose">
+          <p>Our internal ranking matched the most visible external checkpoint: our predicted top player was drafted first.</p>
+
+          <figure class="figure">
+            <img src="../../assets/img/2k_article_NYT.png" alt="Draft coverage" />
+            <figcaption>The moment the internal story met a public decision.</figcaption>
+          </figure>
+
+          <p>
+            I don’t treat that as “proof the model is correct.” I treat it as evidence that the pipeline produced something coherent enough
+            to be trusted in a real decision loop.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- What generalizes -->
+    <section class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>What generalizes</h2>
+        </div>
+
+        <div class="panel prose">
+          <p>This project is the same pattern I keep returning to across domains:</p>
+          <ul class="list">
+            <li>define a minimal state that matters,</li>
+            <li>update it under drift and uncertainty,</li>
+            <li>separate signal from context,</li>
+            <li>and present it in an interface where humans can reason, disagree, and decide.</li>
+          </ul>
+          <p>That combination—math + narrative + artifacts—is what I mean by mathematical storytelling.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <span>© <span id="y"></span> Your Name</span>
+        <span class="footer__sep">·</span>
+        <a href="../../">Home</a>
+      </div>
+    </footer>
+  </main>
+
+  <!-- MathJax for the Elo equations -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <script src="../../script.js"></script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hearthstone "Card2Vec" — Fast embeddings for deckbuilding + next-play prediction</title>
+  <meta name="description" content="At Helix Esports (Genji Analytics): word2vec-style embeddings trained on winning gameplay + top decks to enable instant deck completion and tactical guidance." />
+
+  <meta property="og:title" content="Hearthstone Card2Vec — Fast embeddings for deckbuilding + next-play prediction" />
+  <meta property="og:description" content="Skip-gram for deck fill; CBOW for next-play prediction. Built for real-time competitive constraints." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../../styles.css" />
+
+  <!-- Small safety helpers so the page stays readable even if you tweak global CSS -->
+  <style>
+    .prose{ max-width: 80ch; }
+    .prose p{ line-height: 1.75; color: var(--muted); }
+    .mini{ color: var(--faint); font-size: 12px; line-height: 1.6; }
+    .links{ display:flex; flex-wrap:wrap; gap:10px; }
+    .links a{ text-decoration: underline; text-underline-offset: 3px; color: var(--muted); }
+    .links a:hover{ color: var(--text); }
+
+    .toc{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    .toc__item{
+      font-size:12px; padding:8px 10px; border-radius:999px;
+      border:1px solid var(--line); background:#0b102255; color: var(--muted);
+    }
+    .toc__item:hover{ color: var(--text); border-color:#ffffff33; }
+
+    .two-col{ display:grid; grid-template-columns: 1.15fr .85fr; gap:14px; }
+    @media (max-width: 980px){ .two-col{ grid-template-columns: 1fr; } }
+
+    .codeblock{
+      margin: 10px 0 0; padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #070A12aa;
+      overflow-x: auto;
+    }
+    .codeblock code{ color: #cfd6ff; font-size: 12px; line-height: 1.5; }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="../../">
+        <span class="brand__mark"></span>
+        <span class="brand__text">YOUR NAME</span>
+      </a>
+      <nav class="nav">
+        <a href="../../#work">Work</a>
+        <a href="../../#research">Research</a>
+        <a class="nav__cta" href="../../#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero__inner">
+        <div class="hero__copy">
+          <p class="kicker">Representation learning · Real-time constraints · Decision tools</p>
+          <h1 class="hero__title">Hearthstone "Card2Vec": from spam filters to esports victory</h1>
+          <p class="hero__lede">
+            Built at Helix Esports (Genji Analytics) to support an in-house Hearthstone team:
+            fast deck completion (skip-gram) and next-play prediction (CBOW), designed to run instantly during practice and play.
+          </p>
+
+          <div class="chips">
+            <span class="chip">word2vec family</span>
+            <span class="chip">skip-gram → deck fill</span>
+            <span class="chip">CBOW → next play</span>
+            <span class="chip">fast retrieval</span>
+          </div>
+
+          <div class="hero__actions" style="margin-top:14px">
+            <a class="btn btn--ghost" href="../../#work">← Back</a>
+            <a class="btn btn--primary" href="#tldr">TL;DR</a>
+          </div>
+
+          <div class="toc">
+            <a class="toc__item" href="#setting">Setting</a>
+            <a class="toc__item" href="#goals">Goals</a>
+            <a class="toc__item" href="#constraints">Constraints</a>
+            <a class="toc__item" href="#insight">Core insight</a>
+            <a class="toc__item" href="#word2vec">Skip-gram vs CBOW</a>
+            <a class="toc__item" href="#modelA">Next play (CBOW)</a>
+            <a class="toc__item" href="#modelB">Deck fill (skip-gram)</a>
+            <a class="toc__item" href="#nested">Nested chunking</a>
+            <a class="toc__item" href="#deploy">Deployment</a>
+            <a class="toc__item" href="#results">Results</a>
+            <a class="toc__item" href="#refs">References</a>
+          </div>
+        </div>
+
+        <div class="hero__panel">
+          <div class="panel__grid"></div>
+
+          <div class="panel__badge">
+            <div class="badge__row">
+              <span class="dot"></span>
+              <span class="badge__label">TL;DR</span>
+            </div>
+            <p class="badge__text">
+              Cards as tokens.<br/>
+              Skip-gram fills decks from a core.<br/>
+              CBOW predicts next play from context.<br/>
+              Real-time via vector retrieval.
+            </p>
+          </div>
+
+          <div class="panel__stats">
+            <div class="stat">
+              <div class="stat__num">30</div>
+              <div class="stat__label">cards per deck</div>
+            </div>
+            <div class="stat">
+              <div class="stat__num">&lt;1s</div>
+              <div class="stat__label">target latency</div>
+            </div>
+            <div class="stat">
+              <div class="stat__num">2</div>
+              <div class="stat__label">objectives</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMAGE SLOT: Banner (you will provide) -->
+      <!-- Put your banner at: assets/img/hs_card2vec_banner.png -->
+      <div class="wrap" style="margin-top:18px">
+        <figure class="figure figure--narrow figure--frame">
+          <img src="../../assets/img/hs_card2vec_banner.png" alt="Hearthstone card2vec banner" />
+          <figcaption class="mini">Add your banner at <code>assets/img/hs_card2vec_banner.png</code>.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- TL;DR -->
+    <section id="tldr" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>TL;DR</h2>
+        </div>
+
+        <div class="panel prose">
+          <p>
+            We needed tools that were actually usable by competitive players: instant, lightweight, and grounded in what wins.
+            I treated Hearthstone strategy as distributional structure and learned embeddings with word2vec-style objectives.
+          </p>
+
+          <ul class="list">
+            <li><strong>Deckbuilding:</strong> used <strong>skip-gram</strong> to “fill out decks” by predicting which cards tend to appear around a chosen core.</li>
+            <li><strong>In-game next play:</strong> used <strong>CBOW</strong> to predict the ideal next play from the surrounding context of recent actions/state tokens.</li>
+            <li><strong>Why this deploys:</strong> online inference is vector lookup + aggregation + nearest neighbors (fast enough for live use).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Setting -->
+    <section id="setting" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Setting: Hearthstone in 30 seconds (and why deckbuilding matters)</h2>
+          <p>A deck is a strategy compressed into 30 cards.</p>
+        </div>
+
+        <div class="prose">
+          <p>
+            Hearthstone is a competitive digital collectible card game. Players build a 30-card deck, then play a turn-based match.
+            At high levels, deckbuilding matters because the deck encodes matchup plans, curve constraints, synergy packages, and responses.
+          </p>
+
+          <p class="callout">
+            <strong>Deckbuilding is the model.</strong> Gameplay is execution. If the deck is wrong for the meta, perfect play still loses.
+          </p>
+
+          <!-- IMAGE SLOT: Hearthstone gameplay -->
+          <!-- Add: assets/img/hs_gameplay.png -->
+          <figure class="figure figure--narrow figure--contain">
+            <img src="../../assets/img/hs_gameplay.png" alt="Hearthstone gameplay placeholder" />
+            <figcaption class="mini">A screenshot of Hearthstone gameplay</code>.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Goals -->
+    <section id="goals" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>What the system needed to do</h2>
+          <p>Three purposes under one constraint: instant usability.</p>
+        </div>
+
+        <div class="panel prose">
+          <ol class="list">
+            <li><strong>Identify rising talent</strong>: recruiting/scouting signal from patterns aligned with top-level play.</li>
+            <li><strong>Help the team win</strong>: accelerate deck iteration and provide in-game guidance.</li>
+            <li><strong>Use internal data effectively</strong>: train on our own winning games and supplement with public tournament data.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Constraints -->
+    <section id="constraints" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Constraint that dominated everything: latency</h2>
+          <p>Model choice was dictated by deployment, not hype.</p>
+        </div>
+
+        <div class="panel prose">
+          <p>
+            These tools needed to run effectively in real time. That meant:
+            training can be expensive, but inference must be cheap and stable.
+          </p>
+          <ul class="list">
+            <li><strong>Offline:</strong> train embeddings on large corpora of winning play/decks.</li>
+            <li><strong>Online:</strong> answer questions with vector operations (sum/avg + dot products + nearest neighbors).</li>
+          </ul>
+
+          <p class="mini">
+            This is why I didn’t use heavier transformer architectures for this use case at the time—even if they were expressive,
+            they weren’t the right tradeoff for instantaneous in-game tooling.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Insight -->
+    <section id="insight" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Core insight: gameplay is a “conversation of cards”</h2>
+          <p>Cards go back and forth like tokens in a dialogue.</p>
+        </div>
+
+        <div class="prose">
+          <p>
+            In-game, cards are played as a sequence. In deckbuilding, cards co-occur as a set.
+            Both can be modeled with “tokens” and “context,” as long as we define context carefully.
+          </p>
+
+          <p class="callout">
+            The deliverable was not “a model.” It was a decision artifact: deck fill suggestions and next-step recommendations players could use immediately.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skip-gram vs CBOW -->
+    <section id="word2vec" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Skip-gram vs CBOW (and why each fits its task)</h2>
+          <p>Same embedding idea, opposite prediction direction.</p>
+        </div>
+
+        <div class="prose">
+          <p>
+            word2vec models learn a vector per token so that tokens sharing context become nearby in embedding space.
+            The two classic objectives differ only in direction:
+          </p>
+
+          <div class="links mini">
+            <a href="https://jalammar.github.io/illustrated-word2vec/" target="_blank" rel="noopener noreferrer">Illustrated Word2vec (Alammar)</a>
+            <a href="https://arxiv.org/abs/1301.3781" target="_blank" rel="noopener noreferrer">Mikolov et al. (2013)</a>
+            <a href="https://radimrehurek.com/gensim/models/word2vec.html" target="_blank" rel="noopener noreferrer">Gensim Word2Vec docs</a>
+          </div>
+
+          <!-- IMAGE SLOT: Skip-gram vs CBOW diagram -->
+          <!-- Add: assets/img/word2vec_skipgram_cbow.png -->
+          <figure class="figure figure--narrow figure--contain">
+            <img src="../../assets/img/word2vec_skipgram_cbow.png" alt="Skip-gram vs CBOW diagram placeholder" />
+            <figcaption class="mini">CBOW vs. Skipgram</code>.</figcaption>
+          </figure>
+
+          <div class="panel">
+            <div class="two-col">
+              <div>
+                <h3 style="margin:0 0 6px; font-family: var(--font-display); font-weight:600;">Skip-gram</h3>
+                <p class="mini" style="margin:0 0 10px;">
+                  <strong>Predict context from a center token.</strong>
+                  (Given one card, predict which other cards appear “around it.”)
+                </p>
+                <ul class="list">
+                  <li><strong>Why it’s good for deck fill:</strong> a player starts with a few “anchor” cards (high-information core), and the task is to recover the missing context (the rest of the deck).</li>
+                  <li><strong>Why it helps with important/rare anchors:</strong> each time an anchor appears, it generates many training pairs (anchor → each context card), so the model can learn strong associations even when the anchor isn’t extremely frequent.</li>
+                  <li><strong>Why “common fillers” still surface:</strong> staples appear as context for many different anchors, so they rank highly as completion candidates across cores.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 style="margin:0 0 6px; font-family: var(--font-display); font-weight:600;">CBOW</h3>
+                <p class="mini" style="margin:0 0 10px;">
+                  <strong>Predict the center token from context.</strong>
+                  (Given the situation, predict the next card.)
+                </p>
+                <ul class="list">
+                  <li><strong>Why it’s good for next-play prediction:</strong> the “right” play is a function of surrounding context (recent plays, inferred plan, simplified state tokens), so the natural direction is context → choice.</li>
+                  <li><strong>Why it can be more stable:</strong> CBOW aggregates context into one signal, which smooths noise and focuses on the single best guess.</li>
+                  <li><strong>Why it matches the interface:</strong> players want a ranked shortlist for “what to do next,” not a bag of related context items.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <p class="mini" style="margin-top:10px;">
+            Note: Hearthstone state is richer than a token window (board/hand/mana/etc.). This system was a lightweight, deployable approximation
+            that still produced useful guidance in practice.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Model A: Next play (CBOW) -->
+    <section id="modelA" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Model A: Next-play prediction (CBOW)</h2>
+          <p>Predict the ideal next card from the surrounding context.</p>
+        </div>
+
+        <div class="prose">
+          <p>
+            For gameplay, the conversation is literal: cards are played in time.
+            I used <strong>CBOW</strong> so the model consumes a context window (recent actions / simplified state tokens)
+            and predicts the “center” token—the next play.
+          </p>
+
+          <p class="callout">
+            <strong>Training data:</strong> winning games played by our team members + scraped top-level tournament play to represent elite distributions.
+          </p>
+
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Model B: Deck fill (Skip-gram) -->
+    <section id="modelB" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Model B: Deck completion (skip-gram)</h2>
+          <p>Given a core, recommend what belongs in the rest of the deck.</p>
+        </div>
+
+        <div class="prose">
+          <p>
+            Deckbuilding is different because a deck is a set/multiset (not a sequence).
+            For deck completion, I used <strong>skip-gram</strong>: treat a core card as an anchor and predict which other cards tend to co-occur with it
+            in winning decks.
+          </p>
+
+          <p class="callout">
+            <strong>Workflow:</strong> a player picks a 7–9 card core; the system proposes ranked “fill” cards so they can iterate quickly and converge.
+          </p>
+
+          <!-- IMAGE SLOT: deck completion UI -->
+          <!-- Add: assets/img/hs_deck_completion.png -->
+          <figure class="figure figure--narrow figure--contain">
+            <img src="../../assets/img/hs_deck_completion.png" alt="Deck completion UI placeholder" />
+            <figcaption class="mini">Concept of deck completion tool we generated (the real tool is now deprecated)</code>.</figcaption>
+          </figure>
+
+          <p class="mini">
+            The naive idea is “train on all permutations of a deck so co-membership becomes context,” but enumerating 30! permutations is impossible.
+            That motivated a compression trick.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Nested chunking -->
+    <section id="nested" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Nested chunking: making deck permutations feasible</h2>
+          <p>Cluster cards that move together, then permute clusters.</p>
+        </div>
+
+        <div class="prose">
+          <p>
+            To avoid combinatorial explosion, I first identified “packages” of cards that reliably move together (synergy clusters).
+            Then I treated each cluster as a super-token and trained a second-stage model over permutations of these chunks.
+          </p>
+
+          <ul class="list">
+            <li><strong>Stage 1:</strong> learn rough similarity/co-occurrence from winning decks → discover stable packages.</li>
+            <li><strong>Stage 2:</strong> permute packages (not 30 individual cards) → learn higher-level deck composition structure.</li>
+          </ul>
+
+          <p class="callout">
+            Lay intuition: treat common multi-word phrases as one unit before learning sentence-level patterns.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Deployment -->
+    <section id="deploy" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Deployment: why this can run in real time</h2>
+          <p>Online work is intentionally trivial.</p>
+        </div>
+
+        <div class="panel prose">
+          <ul class="list">
+            <li>Embed: look up vectors for core cards or context tokens.</li>
+            <li>Aggregate: sum/average to form a query vector.</li>
+            <li>Retrieve: nearest neighbors (dot product / cosine similarity).</li>
+          </ul>
+
+          <p class="mini">
+            This “train offline, retrieve online” architecture is why embeddings are such a practical tool for real-time systems.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="results" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Results</h2>
+          <p>External checkpoint + placeholders for internal validation if you add them later.</p>
+        </div>
+
+        <div class="prose">
+          <div class="panel">
+            <h3 style="margin:0 0 8px; font-family: var(--font-display); font-weight:600;">Result: Worldwide Rank #1 For Team Genji Blue!!</h3>
+            <p class="mini" style="margin:0;">
+              The above ideas paid off: Blizzard’s official Season 3 Pro Team Standings update lists <strong>Team Genji Blue #1</strong>, ahead of <strong>Tempo Storm</strong>.
+              (Link below.)
+            </p>
+
+          <figure class="figure figure--narrow figure--contain">
+            <img src="../../assets/img/team_genji_worldwide_rank1.png" alt="Team Genji Blue Worldwide #1!" />
+          </figure>
+
+            <div class="links mini" style="margin-top:10px;">
+              <a href="https://playhearthstone.com/en-us/blog/22819080/" target="_blank" rel="noopener noreferrer">Pro Scene Point Update: Pro Team Standings (Dec 2018)</a>
+              <a href="https://news.blizzard.com/en-us/hearthstone/22327252/give-it-up-for-team-genji" target="_blank" rel="noopener noreferrer">Give It Up for Team Genji (Blizzard feature)</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- References -->
+    <section id="refs" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>References & technical links</h2>
+          <p>Great resources to understand the core concepts better.</p>
+        </div>
+
+        <div class="panel prose">
+          <ul class="list">
+            <li><a href="https://jalammar.github.io/illustrated-word2vec/" target="_blank" rel="noopener noreferrer">The Illustrated Word2vec (Jay Alammar)</a></li>
+            <li><a href="https://arxiv.org/abs/1301.3781" target="_blank" rel="noopener noreferrer">Mikolov et al. (2013): Efficient Estimation of Word Representations in Vector Space</a></li>
+            <li><a href="https://radimrehurek.com/gensim/models/word2vec.html" target="_blank" rel="noopener noreferrer">Gensim Word2Vec documentation</a></li>
+            <li><a href="https://www.tensorflow.org/text/tutorials/word2vec" target="_blank" rel="noopener noreferrer">TensorFlow: Word2Vec tutorial</a></li>
+            <li><a href="https://playhearthstone.com/en-us/blog/22819080/" target="_blank" rel="noopener noreferrer">Blizzard: Pro Scene Point Update (Season 3 Pro Team Standings)</a></li>
+          </ul>
+
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <span>© <span id="y"></span> Your Name</span>
+        <span class="footer__sep">·</span>
+        <a href="../../">Home</a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="../../script.js"></script>
+</body>
+</html>

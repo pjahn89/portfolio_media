@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Genji NLP (I) — Twitch Chat → “PogChamp” Moments</title>
+  <meta name="description" content="BERT-based highlight detection: use Twitch chat as a cheap sensor to locate expensive video segments." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../../styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="../../">
+        <span class="brand__mark"></span>
+        <span class="brand__text">YOUR NAME</span>
+      </a>
+      <nav class="nav">
+        <a href="../../#work">Work</a>
+        <a href="../../#research">Research</a>
+        <a class="nav__cta" href="../../#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero__inner">
+        <div class="hero__copy">
+          <p class="kicker">NLP · Compression · Interface</p>
+          <h1 class="hero__title">Twitch Chat → “PogChamp” Moments</h1>
+          <p class="hero__lede">
+            Use live chat as a time-aligned, collective-attention sensor to find the few moments in hours of VOD
+            that matter for downstream analysis.
+          </p>
+
+          <div class="chips">
+            <span class="chip">Signal: chat</span>
+            <span class="chip">Model: BERT fine-tune</span>
+            <span class="chip">Output: timestamps → clips</span>
+            <span class="chip">Constraint: real-time latency</span>
+          </div>
+
+          <div class="hero__actions" style="margin-top:14px">
+            <a class="btn btn--ghost" href="../../#work">← Back</a>
+            <a class="btn btn--primary" href="#why">Read</a>
+          </div>
+
+          <div class="toc">
+            <a class="toc__item" href="#why">Why</a>
+            <a class="toc__item" href="#insight">Key insight</a>
+            <a class="toc__item" href="#bert">BERT</a>
+            <a class="toc__item" href="#pipeline">Pipeline</a>
+            <a class="toc__item" href="#timestamps">Timestamps</a>
+            <a class="toc__item" href="#limits">Limit</a>
+          </div>
+        </div>
+
+        <div class="hero__panel">
+          <div class="panel__grid"></div>
+
+          <div class="panel__badge">
+            <div class="badge__row">
+              <span class="dot"></span>
+              <span class="badge__label">TL;DR</span>
+            </div>
+            <p class="badge__text">
+              Too much video.<br/>
+              Use chat spikes + language shift to pick what to watch.<br/>
+              BERT scores sliding windows → peak-detect → clip.
+            </p>
+          </div>
+
+          <div class="panel__stats">
+            <div class="stat">
+              <div class="stat__num">Cheap</div>
+              <div class="stat__label">chat as sensor</div>
+            </div>
+            <div class="stat">
+              <div class="stat__num">Expensive</div>
+              <div class="stat__label">video review</div>
+            </div>
+            <div class="stat">
+              <div class="stat__num">Bridge</div>
+              <div class="stat__label">timestamp selection</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wrap" style="margin-top:18px">
+        <figure class="figure">
+          <img src="../../assets/img/twitch_banner.png" alt="Twitch highlight detection banner" />
+          <figcaption>Genji NLP (I): highlight detection using Twitch chat as the primary signal.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- WHY -->
+    <section id="why" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Why we built this</h2>
+          <p>A practical compression problem: locating the small fraction of the timeline that matters.</p>
+        </div>
+
+        <div class="panel prose">
+          <p class="quote">
+            “It’s not that we don’t have enough data — we have <em>too much</em> data.”
+          </p>
+
+          <p>
+            Twitch VODs can be many hours long. Manually watching streams to find important moments
+            (big plays, funny glitches, momentum shifts) doesn’t scale, and downstream analysis usually
+            only needs a small fraction of the timeline. :contentReference[oaicite:1]{index=1}
+          </p>
+
+          <figure class="figure">
+            <img src="../../assets/img/2k_chat.png" alt="Twitch chat reacting to gameplay" />
+            <figcaption>A sample of livestreamed gameplay with Twitch chat on the right.</figcaption>
+          </figure>
+
+          <p class="callout">
+            <strong>Question:</strong> Can we use cheap signals to locate the expensive data?
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSIGHT -->
+    <section id="insight" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Key insight: the audience is already labeling the stream</h2>
+          <p>Chat is noisy — but it’s time-aligned and reflects collective attention.</p>
+        </div>
+
+        <div class="prose">
+          <p>
+            Twitch has a built-in real-time sensor: <strong>live chat</strong>. Chat is idiosyncratic (emotes, slang, inside jokes),
+            but it has two properties we cared about: <strong>time alignment</strong> and <strong>collective attention</strong>. :contentReference[oaicite:2]{index=2}
+          </p>
+
+          <div class="panel">
+            <div class="kpi-grid">
+              <div class="kpi">
+                <div class="kpi__title">Time alignment</div>
+                <div class="kpi__text">Every message is timestamped against the stream.</div>
+              </div>
+              <div class="kpi">
+                <div class="kpi__title">Collective attention</div>
+                <div class="kpi__text">Spikes + language shifts correlate with on-screen events.</div>
+              </div>
+              <div class="kpi">
+                <div class="kpi__title">Goal</div>
+                <div class="kpi__text">Answer: “When did people react?”</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BERT -->
+    <section id="bert" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>What BERT is (and why it mattered pre-ChatGPT)</h2>
+          <p>Context-dependent meaning in messy real-world text.</p>
+        </div>
+
+        <div class="prose">
+          <p>
+            <strong>BERT</strong> (“Bidirectional Encoder Representations from Transformers”) is a transformer-based language model designed
+            to produce context-aware embeddings of text. :contentReference[oaicite:3]{index=3}
+          </p>
+
+          <figure class="figure">
+            <img src="../../assets/img/bert-split-transformer.jpeg" alt="BERT vs ChatGPT illustration" />
+            <figcaption>BERT’s pretrain→fine-tune workflow was a major step toward modern transformer NLP.</figcaption>
+          </figure>
+
+          <ul class="list">
+            <li>Reads text <strong>bidirectionally</strong> (left + right context).</li>
+            <li>Popularized <strong>pretrain once → fine-tune</strong> for tasks.</li>
+            <li>Improved semantic handling vs keyword/TF-IDF-era NLP in noisy text.</li>
+          </ul>
+
+          <p>
+            That mattered for Twitch because meaning is often implicit (“Pog”, emotes, sarcasm, in-jokes) and context-dependent. :contentReference[oaicite:4]{index=4}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PIPELINE -->
+    <section id="pipeline" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Training & implementation</h2>
+          <p>Domain-adapt, label, supervise, then clip.</p>
+        </div>
+
+        <div class="prose">
+          <figure class="figure">
+            <img src="../../assets/img/genji_bert_pipeline.png" alt="Training and implementation sequence diagram" />
+            <figcaption>Pipeline: domain adaptation → labeling → supervised scoring → clipping.</figcaption>
+          </figure>
+
+          <div class="steps">
+            <div class="step">
+              <div class="step__num">1</div>
+              <div class="step__body">
+                <div class="step__title">Domain adaptation (Twitch language)</div>
+                <div class="step__text">Collect large chat dumps and fine-tune a BERT-based model on Twitch-style language (emotes, slang, shorthand).</div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step__num">2</div>
+              <div class="step__body">
+                <div class="step__title">Ground truth labels (“PogChamp moments”)</div>
+                <div class="step__text">Domain experts reviewed ~20 full videos and tagged notable moments we wanted to capture.</div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step__num">3</div>
+              <div class="step__body">
+                <div class="step__title">Supervised moment prediction</div>
+                <div class="step__text">Train the model to score chat windows over time for “interestingness.”</div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step__num">4</div>
+              <div class="step__body">
+                <div class="step__title">Video clipping</div>
+                <div class="step__text">Map high-scoring windows to timestamps and clip segments automatically.</div>
+              </div>
+            </div>
+          </div>
+
+          <p class="mini">
+            (This section mirrors your original 4-step breakdown.) :contentReference[oaicite:5]{index=5}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TIMESTAMPS -->
+    <section id="timestamps" class="section section--alt">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>How the model selects timestamps</h2>
+          <p>Sliding windows → scores → peak detection → clips.</p>
+        </div>
+
+        <div class="prose">
+          <figure class="figure">
+            <img src="../../assets/img/genji_timestamp_scoring.png" alt="Scoring chat windows to choose clip timestamps" />
+            <figcaption>Operational scoring: compute an “interestingness” score over time, then select peaks.</figcaption>
+          </figure>
+
+          <ul class="list">
+            <li>Run the model on sliding windows of chat (every N seconds).</li>
+            <li><strong>Score spikes</strong> → candidate moments.</li>
+            <li>Threshold + peak detection → select timestamps.</li>
+            <li>Clip around each timestamp → highlight segments.</li>
+          </ul>
+
+          <p>
+            This turns hours of VOD into a compact set of clips suitable for review and downstream modeling. :contentReference[oaicite:6]{index=6}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIMITS -->
+    <section id="limits" class="section">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Limitation (and why it led to the next mini-story)</h2>
+          <p>Real-time constraints drove the next iteration.</p>
+        </div>
+
+        <div class="panel prose">
+          <p>
+            We wanted to clip <strong>live</strong> (during the stream), not only after the VOD finished rendering.
+            At the time, model size + latency requirements + compute constraints made real-time deployment impractical
+            at our scale — and that constraint directly produced the idea explored in the next mini-story. :contentReference[oaicite:7]{index=7}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <span>© <span id="y"></span> Your Name</span>
+        <span class="footer__sep">·</span>
+        <a href="../../">Home</a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="../../script.js"></script>
+</body>
+</html>

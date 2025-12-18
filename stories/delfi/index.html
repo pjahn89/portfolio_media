@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delfi | Hedging as a Shield</title>
+    <meta
+      name="description"
+      content="A first-person case study on AI-driven interest rate risk management, grounded in Delfi's SVB analysis."
+    />
+
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root{
+        --bg: #07080c;
+        --panel: rgba(255,255,255,0.06);
+        --panel2: rgba(255,255,255,0.08);
+        --text: rgba(255,255,255,0.92);
+        --muted: rgba(255,255,255,0.66);
+        --faint: rgba(255,255,255,0.48);
+        --stroke: rgba(255,255,255,0.14);
+        --stroke2: rgba(255,255,255,0.20);
+        --shadow: 0 18px 60px rgba(0,0,0,0.55);
+        --shadow2: 0 10px 30px rgba(0,0,0,0.45);
+        --radius: 18px;
+        --radius2: 26px;
+        --max: 1120px;
+        --accent: #7dd3fc;
+        --accent2: #a78bfa;
+      }
+
+      html, body { height: 100%; }
+      body{
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: radial-gradient(1200px 700px at 10% 0%, rgba(125,211,252,0.10), transparent 55%),
+                    radial-gradient(900px 600px at 85% 10%, rgba(167,139,250,0.10), transparent 55%),
+                    radial-gradient(900px 700px at 40% 110%, rgba(56,189,248,0.08), transparent 55%),
+                    var(--bg);
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+
+      a{ color: inherit; text-decoration: none; }
+      a:hover{ text-decoration: underline; text-decoration-color: rgba(255,255,255,0.35); }
+
+      .wrap{
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 28px 20px 64px;
+      }
+
+      .topbar{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .crumbs{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .chip{
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+        color: rgba(255,255,255,0.78);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .hero{
+        position: relative;
+        border-radius: var(--radius2);
+        border: 1px solid rgba(255,255,255,0.12);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)),
+          radial-gradient(1200px 700px at 10% 0%, rgba(125,211,252,0.18), transparent 55%),
+          radial-gradient(900px 700px at 90% 10%, rgba(167,139,250,0.16), transparent 60%),
+          #0b0d14;
+      }
+
+      .heroBanner{
+        position: absolute;
+        inset: 0;
+        background-image:
+          radial-gradient(900px 550px at 75% 0%, rgba(125,211,252,0.22), transparent 60%),
+          radial-gradient(900px 600px at 20% 20%, rgba(167,139,250,0.16), transparent 60%),
+          linear-gradient(180deg, rgba(0,0,0,0.20), rgba(0,0,0,0.70)),
+          url("../../assets/img/delfi_banner.png");
+        background-size: cover;
+        background-position: center;
+        filter: saturate(1.05) contrast(1.05);
+        opacity: 0.92;
+      }
+
+      .heroInner{
+        position: relative;
+        padding: 34px 28px;
+        display: grid;
+        grid-template-columns: 1.3fr 0.7fr;
+        gap: 22px;
+        align-items: end;
+      }
+
+      .kicker{
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.72);
+      }
+
+      .dot{
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        box-shadow: 0 0 0 6px rgba(125,211,252,0.08);
+      }
+
+      h1{
+        margin: 10px 0 10px;
+        font-size: clamp(30px, 4vw, 44px);
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+      }
+
+      .sub{
+        margin: 0;
+        color: rgba(255,255,255,0.80);
+        font-size: 16px;
+        line-height: 1.5;
+        max-width: 62ch;
+      }
+
+      .heroMeta{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .grid{
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .card{
+        border-radius: var(--radius);
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.05);
+        box-shadow: var(--shadow2);
+        overflow: hidden;
+      }
+
+      .main{
+        padding: 18px;
+      }
+
+      .side{
+        padding: 16px;
+        position: sticky;
+        top: 18px;
+      }
+
+      .side h3{
+        margin: 6px 0 10px;
+        font-size: 13px;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.72);
+      }
+
+      .side a{
+        display: block;
+        padding: 10px 10px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        color: rgba(255,255,255,0.78);
+        font-size: 14px;
+      }
+      .side a:hover{
+        border-color: rgba(255,255,255,0.14);
+        background: rgba(255,255,255,0.04);
+        text-decoration: none;
+      }
+
+      .section{
+        padding: 18px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.10);
+        background: rgba(255,255,255,0.04);
+        margin-bottom: 14px;
+      }
+
+      .section h2{
+        margin: 0 0 10px;
+        font-size: 18px;
+        letter-spacing: -0.015em;
+      }
+
+      .section p{
+        margin: 0 0 10px;
+        color: rgba(255,255,255,0.80);
+        line-height: 1.65;
+        font-size: 15px;
+      }
+      .section p:last-child{ margin-bottom: 0; }
+
+      .callout{
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.14);
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+        padding: 14px 14px;
+        margin-top: 10px;
+      }
+      .callout strong{
+        color: rgba(255,255,255,0.92);
+      }
+
+      figure{
+        margin: 14px 0 0;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(0,0,0,0.25);
+      }
+
+      figure img{
+        width: 100%;
+        height: auto;
+        display: block;
+        max-height: 520px;
+        object-fit: contain;
+        background: rgba(0,0,0,0.25);
+      }
+
+      figcaption{
+        padding: 10px 12px;
+        font-size: 13px;
+        color: rgba(255,255,255,0.66);
+        border-top: 1px solid rgba(255,255,255,0.10);
+        background: rgba(255,255,255,0.03);
+      }
+
+      .twoCol{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .pillRow{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .pill{
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.14);
+        background: rgba(255,255,255,0.04);
+        color: rgba(255,255,255,0.75);
+      }
+
+      table{
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.03);
+      }
+      th, td{
+        text-align: left;
+        padding: 10px 10px;
+        font-size: 14px;
+        color: rgba(255,255,255,0.78);
+        border-bottom: 1px solid rgba(255,255,255,0.10);
+        vertical-align: top;
+      }
+      th{
+        font-size: 12px;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.66);
+        background: rgba(255,255,255,0.04);
+      }
+      tr:last-child td{ border-bottom: none; }
+
+      .footer{
+        margin-top: 18px;
+        color: rgba(255,255,255,0.55);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 980px){
+        .heroInner{ grid-template-columns: 1fr; }
+        .heroMeta{ justify-content: flex-start; }
+        .grid{ grid-template-columns: 1fr; }
+        .side{ position: relative; top: 0; }
+        .twoCol{ grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="crumbs">
+          <a href="../../index.html">Home</a>
+          <span>›</span>
+          <a href="../genji/index.html">Stories</a>
+          <span>›</span>
+          <span style="color: rgba(255,255,255,0.85);">Delfi</span>
+        </div>
+
+        <div class="chip" title="This page is a narrative portfolio entry">
+          <span style="opacity:.9">Portfolio story</span>
+          <span style="opacity:.6">•</span>
+          <span style="opacity:.85">Fintech</span>
+          <span style="opacity:.6">•</span>
+          <span style="opacity:.85">Risk management</span>
+        </div>
+      </div>
+
+      <header class="hero">
+        <div class="heroBanner"></div>
+        <div class="heroInner">
+          <div>
+            <div class="kicker"><span class="dot"></span><span>DELFI LABS • CASE STUDY</span></div>
+            <h1>Delfi: Hedging as a shield</h1>
+            <p class="sub">
+              I built Delfi around a simple belief: stability is a prerequisite for growth. This is a first-person
+              account of how I connected a family story about food security to algorithmic interest-rate risk management,
+              grounded in Delfi’s SVB analysis.
+            </p>
+
+            <div class="pillRow" aria-label="Tags">
+              <span class="pill">Interest rate risk</span>
+              <span class="pill">Derivatives hedging</span>
+              <span class="pill">Yield curve dynamics</span>
+              <span class="pill">Scenario simulation</span>
+              <span class="pill">AI search over strategies</span>
+            </div>
+          </div>
+
+          <div class="heroMeta">
+            <span class="chip">Perspective: founder</span>
+            <span class="chip">Artifact: SVB report</span>
+            <span class="chip">Output: hedge recommendation</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="grid">
+        <main class="card main">
+          <section class="section" id="origin">
+            <h2>Origin: rice prices, then capital</h2>
+            <p>
+              My grandfather served as an economic minister in post-war Korea. One of the jobs that mattered most was
+              stabilizing the price of rice. If people fear they will not eat tomorrow, the entire economy becomes
+              brittle. Stability is not a luxury. It is the platform that lets real growth happen.
+            </p>
+            <p>
+              I co-founded Delfi to pursue the same idea in modern markets. Not as speculation and not as a bet on being
+              right about the future, but as hedging: a shield, not a sword. The motivation was also practical. Robust
+              risk management has historically lived behind the walls of large banks. I wanted software to make that
+              capability accessible, fast, and operational in everyday decision-making.
+            </p>
+          </section>
+
+          <section class="section" id="svb">
+            <h2>Why SVB became the proving ground</h2>
+            <p>
+              Silicon Valley Bank (SVB) collapsed in early March 2023 after a rapid loss of confidence and a bank run.
+              Delfi’s report frames it as a textbook case of interest rate risk mismanagement. :contentReference[oaicite:1]{index=1}
+            </p>
+
+            <div class="callout">
+              <p style="margin:0;">
+                <strong>The core setup</strong>: a balance sheet tilted toward long-maturity securities on the asset side,
+                paired with generous deposit-rate policies on the liability side. When rates rose quickly, mark-to-market
+                losses overwhelmed the gains from higher net interest income, and disclosure catalyzed a run. :contentReference[oaicite:2]{index=2}
+              </p>
+            </div>
+          </section>
+
+          <section class="section" id="balance-sheet">
+            <h2>Balance sheet intuition for a non-banker</h2>
+
+            <div class="twoCol">
+              <div class="callout">
+                <p style="margin:0;">
+                  <strong>Duration</strong> (informal): how sensitive a bond’s price is to changes in interest rates.
+                  Longer-maturity fixed-coupon bonds generally have higher duration, so they fall more when rates rise.
+                </p>
+              </div>
+
+              <div class="callout">
+                <p style="margin:0;">
+                  <strong>Deposit beta</strong> (informal): how much of market-rate moves pass through to what the bank
+                  pays depositors. The report estimates SVB’s beta at about 0.5 versus a national beta around 0.1. :contentReference[oaicite:3]{index=3}
+                </p>
+              </div>
+            </div>
+
+            <p style="margin-top:12px;">
+              SVB’s assets were unusually concentrated in securities. The report summarizes the 2022 mix as roughly
+              57% securities, 35% loans, with the remainder in cash and other assets. :contentReference[oaicite:4]{index=4}
+            </p>
+
+            <figure>
+              <img src="../../assets/img/delfi_chart1_assets.png" alt="Chart 1: Breakdown of 2022 SVB total assets" />
+              <figcaption>SVB asset mix (from the Delfi report). Replace the image file with your own cropped screenshot if desired.</figcaption>
+            </figure>
+
+            <p style="margin-top:12px;">
+              The bigger issue was not only “lots of securities,” but “long securities.” The report shows most of the
+              securities portfolio sitting at ten years or more maturity. :contentReference[oaicite:5]{index=5}
+            </p>
+
+            <figure>
+              <img
+                src="../../assets/img/delfi_chart2_maturity.png"
+                alt="Chart 2: Breakdown of 2022 SVB securities portfolio by maturity"
+              />
+              <figcaption>SVB securities maturity distribution (from the Delfi report).</figcaption>
+            </figure>
+          </section>
+
+          <section class="section" id="stress-test">
+            <h2>The uncomfortable lesson of scenario thinking</h2>
+            <p>
+              A recurring failure mode in risk is not a lack of intelligence. It is a lack of imagination under
+              constraint: people anchor to a narrow band of “reasonable” futures. Delfi’s report emphasizes this with a
+              stark point. At the beginning of January 2021, its models put only about a 1.2% probability on the Fed
+              funds rate reaching at least 4.75% over the next two years. :contentReference[oaicite:6]{index=6}
+            </p>
+
+            <figure>
+              <img
+                src="../../assets/img/delfi_chart6_fedfunds_sims.png"
+                alt="Chart 6: Simulations and actual realization of the Federal Funds rate"
+              />
+              <figcaption>Monte Carlo-style rate scenarios versus realized path (from the Delfi report).</figcaption>
+            </figure>
+
+            <p style="margin-top:12px;">
+              The lesson I took is not “predict the tail.” It is “build a system that survives it.” The moment you stop
+              trying to be right and instead try to be robust, the whole problem changes.
+            </p>
+          </section>
+
+          <section class="section" id="ai-approach">
+            <h2>What “AI hedging” meant in practice</h2>
+            <p>
+              The report’s framing is pragmatic: simulate interest-rate scenarios, map them through an (extrapolated)
+              balance sheet, and search the space of hedging actions for strategies that improve outcomes across
+              scenarios. :contentReference[oaicite:7]{index=7}
+            </p>
+
+            <div class="callout">
+              <p style="margin:0;">
+                <strong>Why this is hard without automation</strong>: the yield curve can move in many shapes, not just
+                “up” or “down.” The report highlights exposure to steepening where longer-maturity rates rise even while
+                shorter-maturity rates remain low. :contentReference[oaicite:8]{index=8}
+              </p>
+            </div>
+
+            <figure>
+              <img
+                src="../../assets/img/delfi_chart8_workflow.png"
+                alt="Chart 8: Delfi AI workflow diagram"
+              />
+              <figcaption>High-level workflow diagram (from the Delfi report).</figcaption>
+            </figure>
+          </section>
+
+          <section class="section" id="recommendation">
+            <h2>The hedge Delfi’s AI would have recommended (as of Q1 2021)</h2>
+            <p>
+              In the SVB simulation, Delfi’s AI recommends a calibrated “spreading” strategy: long short-maturity Fed
+              Funds futures, offset by short positions in longer-maturity Treasury futures. :contentReference[oaicite:9]{index=9}
+            </p>
+
+            <table aria-label="Hedge positions table">
+              <thead>
+                <tr>
+                  <th>Instrument</th>
+                  <th>Direction</th>
+                  <th>Notional (USD, approx)</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Federal Funds futures</td>
+                  <td>Long</td>
+                  <td>$18.3B</td>
+                  <td>Offsets losses when short rates rise</td>
+                </tr>
+                <tr>
+                  <td>2y Treasury note futures</td>
+                  <td>Short</td>
+                  <td>$10.2B</td>
+                  <td>Balances curve-shape exposure</td>
+                </tr>
+                <tr>
+                  <td>5y Treasury note futures</td>
+                  <td>Short</td>
+                  <td>$0.14B</td>
+                  <td>Small calibration leg</td>
+                </tr>
+                <tr>
+                  <td>10y Treasury note futures</td>
+                  <td>Short</td>
+                  <td>$13.6B</td>
+                  <td>Targets long-end duration risk</td>
+                </tr>
+                <tr>
+                  <td>T-bond futures</td>
+                  <td>Short</td>
+                  <td>$3.1B</td>
+                  <td>Extends hedge to the long end</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p style="margin-top:10px; color: rgba(255,255,255,0.68); font-size: 14px;">
+              Notionals are taken from the report’s Table 1 (rounded here for readability). :contentReference[oaicite:10]{index=10}
+            </p>
+          </section>
+
+          <section class="section" id="results">
+            <h2>Results: robustness, not clairvoyance</h2>
+            <p>
+              The report’s headline outcome is simple: this hedging program substantially reduces performance volatility
+              and flips the simulated outcome from loss to gain. It states that ex-ante volatility would have been
+              reduced by 95%. :contentReference[oaicite:11]{index=11}
+            </p>
+            <p>
+              Ex-post, the report summarizes performance as approximately a +$3.5B gain instead of a -$2B loss, and later
+              reports a +$3.3B gain versus a -$2.0B loss within its simulation section. :contentReference[oaicite:12]{index=12}
+            </p>
+
+            <div class="twoCol">
+              <figure>
+                <img
+                  src="../../assets/img/delfi_chart7_unhedged_performance.png"
+                  alt="Chart 7: Unhedged SVB performance distribution"
+                />
+                <figcaption>Unhedged performance distribution (from the Delfi report).</figcaption>
+              </figure>
+
+              <figure>
+                <img
+                  src="../../assets/img/delfi_chart9_hedged_performance.png"
+                  alt="Chart 9: Hedged SVB performance distribution"
+                />
+                <figcaption>Hedged performance distribution (from the Delfi report).</figcaption>
+              </figure>
+            </div>
+
+            <figure>
+              <img
+                src="../../assets/img/delfi_chart10_histograms.png"
+                alt="Chart 10: Histograms of unhedged vs hedged performance"
+              />
+              <figcaption>Side-by-side histograms showing the shift in outcomes (from the Delfi report).</figcaption>
+            </figure>
+
+            <p style="margin-top:12px;">
+              The story I want to tell here is not “we predicted the crisis.” It is that disciplined scenario thinking,
+              paired with fast search over hedging actions, can turn fragile balance sheets into survivable ones.
+            </p>
+          </section>
+
+          <section class="section" id="principles">
+            <h2>Design constraints that mattered to me</h2>
+            <p>
+              Two constraints shaped how I think about this category of product.
+            </p>
+            <div class="twoCol">
+              <div class="callout">
+                <p style="margin:0;">
+                  <strong>Speed</strong>: risk insights have to be usable inside real decision cycles, not in a quarterly
+                  slide deck. If a hedge takes days to compute, it becomes political. If it takes minutes, it becomes
+                  operational. :contentReference[oaicite:13]{index=13}
+                </p>
+              </div>
+              <div class="callout">
+                <p style="margin:0;">
+                  <strong>Interpretability</strong>: the output has to translate to concrete trades and a clear narrative
+                  about what risks are being neutralized. The value is not just the number, but the logic it supports.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section" id="links">
+            <h2>Links</h2>
+            <p style="margin-bottom: 0;">
+              <a href="https://www.delfi.co/report.pdf" target="_blank" rel="noopener noreferrer">Delfi report (PDF): AI and financial risk management applied to SVB</a><br />
+              <a href="https://www.delfi.co/" target="_blank" rel="noopener noreferrer">delfi.co</a>
+            </p>
+
+            <div class="footer">
+              This portfolio entry is descriptive and educational. It is not financial advice, and it does not propose a recommendation
+              for any specific institution. All SVB quantitative figures shown here are attributed to the referenced Delfi report.
+            </div>
+          </section>
+        </main>
+
+        <aside class="card side" aria-label="On-page navigation">
+          <h3>On this page</h3>
+          <a href="#origin">Origin</a>
+          <a href="#svb">Why SVB</a>
+          <a href="#balance-sheet">Balance sheet intuition</a>
+          <a href="#stress-test">Scenario thinking</a>
+          <a href="#ai-approach">AI approach</a>
+          <a href="#recommendation">Hedge recommendation</a>
+          <a href="#results">Results</a>
+          <a href="#principles">Design constraints</a>
+          <a href="#links">Links</a>
+
+          <h3 style="margin-top: 14px;">Assets expected</h3>
+          <a href="../../assets/img/delfi_banner.png">../../assets/img/delfi_banner.png</a>
+          <a href="../../assets/img/delfi_chart1_assets.png">Chart 1 image</a>
+          <a href="../../assets/img/delfi_chart2_maturity.png">Chart 2 image</a>
+          <a href="../../assets/img/delfi_chart6_fedfunds_sims.png">Chart 6 image</a>
+          <a href="../../assets/img/delfi_chart7_unhedged_performance.png">Chart 7 image</a>
+          <a href="../../assets/img/delfi_chart8_workflow.png">Chart 8 image</a>
+          <a href="../../assets/img/delfi_chart9_hedged_performance.png">Chart 9 image</a>
+          <a href="../../assets/img/delfi_chart10_histograms.png">Chart 10 image</a>
+        </aside>
+      </div>
+    </div>
+  </body>
+</html>
